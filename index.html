@@ -109,9 +109,9 @@
 
   const SUPABASE_URL = "https://hghvxlardfzucbroarim.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhnaHZ4bGFyZGZ6dWNicm9hcmltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAzOTI5ODAsImV4cCI6MjEwNTk2ODk4MH0.XMx56Qzib3w99cAOcwRWQUM07cAbF0QoC7Chsrlu9ug";
-  const PASSCODE = "hisky123";
+  const PASSCODE = "why123";
 
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   let me = localStorage.getItem("ks_who") || null;
 
@@ -169,7 +169,7 @@
   }
 
   async function loadMessages(){
-    const { data, error } = await supabase
+    const { data, error } = await sb
       .from("ks_messages")
       .select("*")
       .order("created_at", { ascending: true })
@@ -180,7 +180,7 @@
   }
 
   function subscribeRealtime(){
-    supabase
+    sb
       .channel("ks_messages_channel")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "ks_messages" },
         payload => renderMessage(payload.new))
@@ -192,7 +192,7 @@
     if(!text) return;
     if(!me){ alert("pick who you are first (print or bigbackskyahh) 👆"); return; }
     msgInput.value = "";
-    const { error } = await supabase.from("ks_messages").insert({ sender: me, text });
+    const { error } = await sb.from("ks_messages").insert({ sender: me, text });
     if(error) console.error(error);
   }
   sendBtn.onclick = sendMessage;
