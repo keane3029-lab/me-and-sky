@@ -94,8 +94,8 @@
   <div id="messages"></div>
   <div style="padding:0 12px;">
     <div id="whoPicker">
-      <button id="pickKeane">I'm Keane</button>
-      <button id="pickSky">I'm Sky</button>
+      <button id="pickKeane">I'm print (keane)</button>
+      <button id="pickSky">I'm bigbackskyahh</button>
     </div>
   </div>
   <div id="inputBar">
@@ -106,11 +106,10 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-  // ====== CONFIG — fill these in ======
+
   const SUPABASE_URL = "https://hghvxlardfzucbroarim.supabase.co";
   const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhnaHZ4bGFyZGZ6dWNicm9hcmltIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAzOTI5ODAsImV4cCI6MjEwNTk2ODk4MH0.XMx56Qzib3w99cAOcwRWQUM07cAbF0QoC7Chsrlu9ug";
-  const PASSCODE = "tungtungtungsahur"; // change this to whatever you want
-  // =====================================
+  const PASSCODE = "tungtungtungsahur";
 
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -148,11 +147,11 @@
 
   function updateWhoUI(){
     whoamiLabel.textContent = me ? `you: ${me}` : "";
-    pickKeane.classList.toggle("active", me === "Keane");
-    pickSky.classList.toggle("active", me === "Sky");
+    pickKeane.classList.toggle("active", me === "print");
+    pickSky.classList.toggle("active", me === "bigbackskyahh");
   }
-  pickKeane.onclick = () => { me = "Keane"; localStorage.setItem("ks_who","Keane"); updateWhoUI(); };
-  pickSky.onclick = () => { me = "Sky"; localStorage.setItem("ks_who","Sky"); updateWhoUI(); };
+  pickKeane.onclick = () => { me = "print"; localStorage.setItem("ks_who","print"); updateWhoUI(); };
+  pickSky.onclick = () => { me = "bigbackskyahh"; localStorage.setItem("ks_who","bigbackskyahh"); updateWhoUI(); };
 
   function renderMessage(row){
     const div = document.createElement("div");
@@ -191,7 +190,7 @@
   async function sendMessage(){
     const text = msgInput.value.trim();
     if(!text) return;
-    if(!me){ alert("pick who you are first (Keane or Sky) 👆"); return; }
+    if(!me){ alert("pick who you are first (print or bigbackskyahh) 👆"); return; }
     msgInput.value = "";
     const { error } = await supabase.from("ks_messages").insert({ sender: me, text });
     if(error) console.error(error);
