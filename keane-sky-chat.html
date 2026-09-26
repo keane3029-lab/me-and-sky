@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>k&s chat</title>
+<style>
+  :root{
+    --bg:#0f0f14; --panel:#171720; --bubble-me:#7c5cff; --bubble-them:#232332;
+    --text:#f0f0f5; --sub:#8a8a9a; --accent:#7c5cff;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    height:100vh; display:flex; align-items:center; justify-content:center;
+  }
+  /* --- Passcode gate --- */
+  #gate{
+    display:flex; flex-direction:column; align-items:center; gap:16px;
+    padding:32px; text-align:center;
+  }
+  #gate h1{font-size:1.4rem;}
+  #gate p{color:var(--sub); font-size:0.9rem;}
+  #passInput{
+    background:var(--panel); border:1px solid #2a2a3a; color:var(--text);
+    padding:14px 16px; border-radius:12px; font-size:1.1rem; text-align:center;
+    letter-spacing:4px; width:220px;
+  }
+  #gateBtn{
+    background:var(--accent); color:white; border:none; padding:12px 28px;
+    border-radius:12px; font-size:1rem; cursor:pointer;
+  }
+  #gateError{color:#ff6b6b; font-size:0.85rem; min-height:1.2em;}
+
+  /* --- Chat UI --- */
+  #app{
+    display:none; flex-direction:column; height:100vh; width:100%; max-width:480px;
+  }
+  header{
+    padding:16px; background:var(--panel); display:flex; align-items:center; gap:10px;
+    border-bottom:1px solid #23233066;
+  }
+  header .dot{width:10px;height:10px;border-radius:50%;background:#4ade80;}
+  header h2{font-size:1rem;}
+  header .whoami{margin-left:auto; font-size:0.8rem; color:var(--sub);}
+
+  #messages{
+    flex:1; overflow-y:auto; padding:16px; display:flex; flex-direction:column; gap:8px;
+  }
+  .msg{max-width:75%; padding:10px 14px; border-radius:16px; font-size:0.95rem; line-height:1.35; word-wrap:break-word;}
+  .msg .meta{font-size:0.65rem; opacity:0.6; margin-top:4px;}
+  .me{align-self:flex-end; background:var(--bubble-me); color:white; border-bottom-right-radius:4px;}
+  .them{align-self:flex-start; background:var(--bubble-them); color:var(--text); border-bottom-left-radius:4px;}
+
+  #inputBar{
+    display:flex; gap:8px; padding:12px; background:var(--panel);
+    border-top:1px solid #23233066;
+  }
+  #msgInput{
+    flex:1; background:var(--bg); border:1px solid #2a2a3a; color:var(--text);
+    padding:12px 14px; border-radius:20px; font-size:0.95rem; outline:none;
+  }
+  #sendBtn{
+    background:var(--accent); color:white; border:none; width:44px; height:44px;
+    border-radius:50%; font-size:1.1rem; cursor:pointer; flex-shrink:0;
+  }
+  #whoPicker{
+    display:flex; gap:10px; margin-top:6px;
+  }
+  #whoPicker button{
+    background:var(--panel); color:var(--text); border:1px solid #2a2a3a;
+    padding:8px 16px; border-radius:10px; cursor:pointer;
+  }
+  #whoPicker button.active{background:var(--accent); border-color:var(--accent);}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <h1>🔒 k&s only</h1>
+  <p>enter the passcode to get in</p>
+  <input id="passInput" type="password" maxlength="12" placeholder="••••">
+  <button id="gateBtn">unlock</button>
+  <div id="gateError"></div>
+</div>
+
+<div id="app">
+  <header>
+    <div class="dot"></div>
+    <h2>keane & sky</h2>
+    <div class="whoami" id="whoamiLabel"></div>
+  </header>
+  <div id="messages"></div>
+  <div style="padding:0 12px;">
+    <div id="whoPicker">
+      <button id="pickKeane">I'm Keane</button>
+      <button id="pickSky">I'm Sky</button>
+    </div>
+  </div>
+  <div id="inputBar">
+    <input id="msgInput" type="text" placeholder="say something...">
+    <button id="sendBtn">➤</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // ====== CONFIG — fill these in ======
+  const SUPABASE_URL = "YOUR_SUPABASE_URL";
+  const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+  const PASSCODE = "sky2026"; // change this to whatever you want
+  // =====================================
+
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let me = localStorage.getItem("ks_who") || null;
+
+  const gate = document.getElementById("gate");
+  const app = document.getElementById("app");
+  const passInput = document.getElementById("passInput");
+  const gateBtn = document.getElementById("gateBtn");
+  const gateError = document.getElementById("gateError");
+  const messagesEl = document.getElementById("messages");
+  const msgInput = document.getElementById("msgInput");
+  const sendBtn = document.getElementById("sendBtn");
+  const whoamiLabel = document.getElementById("whoamiLabel");
+  const pickKeane = document.getElementById("pickKeane");
+  const pickSky = document.getElementById("pickSky");
+
+  function unlock(){
+    gate.style.display = "none";
+    app.style.display = "flex";
+    updateWhoUI();
+    loadMessages();
+    subscribeRealtime();
+  }
+
+  gateBtn.onclick = () => {
+    if(passInput.value === PASSCODE){
+      unlock();
+    } else {
+      gateError.textContent = "nah that's wrong, try again";
+      passInput.value = "";
+    }
+  };
+  passInput.addEventListener("keydown", e => { if(e.key === "Enter") gateBtn.click(); });
+
+  function updateWhoUI(){
+    whoamiLabel.textContent = me ? `you: ${me}` : "";
+    pickKeane.classList.toggle("active", me === "Keane");
+    pickSky.classList.toggle("active", me === "Sky");
+  }
+  pickKeane.onclick = () => { me = "Keane"; localStorage.setItem("ks_who","Keane"); updateWhoUI(); };
+  pickSky.onclick = () => { me = "Sky"; localStorage.setItem("ks_who","Sky"); updateWhoUI(); };
+
+  function renderMessage(row){
+    const div = document.createElement("div");
+    div.className = "msg " + (row.sender === me ? "me" : "them");
+    const time = new Date(row.created_at).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    div.innerHTML = `${escapeHtml(row.text)}<div class="meta">${row.sender} · ${time}</div>`;
+    messagesEl.appendChild(div);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function escapeHtml(str){
+    const d = document.createElement("div");
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  async function loadMessages(){
+    const { data, error } = await supabase
+      .from("ks_messages")
+      .select("*")
+      .order("created_at", { ascending: true })
+      .limit(200);
+    if(error){ console.error(error); return; }
+    messagesEl.innerHTML = "";
+    data.forEach(renderMessage);
+  }
+
+  function subscribeRealtime(){
+    supabase
+      .channel("ks_messages_channel")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "ks_messages" },
+        payload => renderMessage(payload.new))
+      .subscribe();
+  }
+
+  async function sendMessage(){
+    const text = msgInput.value.trim();
+    if(!text) return;
+    if(!me){ alert("pick who you are first (Keane or Sky) 👆"); return; }
+    msgInput.value = "";
+    const { error } = await supabase.from("ks_messages").insert({ sender: me, text });
+    if(error) console.error(error);
+  }
+  sendBtn.onclick = sendMessage;
+  msgInput.addEventListener("keydown", e => { if(e.key === "Enter") sendMessage(); });
+</script>
+
+</body>
+</html>
